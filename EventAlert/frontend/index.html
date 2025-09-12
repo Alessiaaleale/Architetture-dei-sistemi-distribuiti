@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - EventAlert</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="loginForm">
+    <label>Email:</label><br>
+    <input type="email" name="email" required><br><br>
+
+    <label>Password:</label><br>
+    <input type="password" name="password" required><br><br>
+
+    <button type="submit">Accedi</button>
+  </form>
+
+  <p id="response"></p>
+
+  <p>
+    Non sei ancora registrato? <a href="register.html">Registrati qui!</a>
+  </p>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const form = e.target;
+
+      const data = {
+        email: form.email.value,
+        password: form.password.value
+      };
+
+      const response = await fetch('http://localhost:8080/index', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        const ruolo = result.ruolo;  
+        const email = form.email.value;
+        sessionStorage.setItem('email', email); 
+
+        if (ruolo === "utente") {
+          window.location.href = `/main_utente.html?email=${encodeURIComponent(email)}`;
+      } if (ruolo === "admin") {
+          window.location.href = `/main_admin.html?email=${encodeURIComponent(email)}`;
+        }
+      } else {
+        document.getElementById('response').innerText = result.error || 'Errore sconosciuto';
+      }
+    });
+  </script>
+</body>
+</html>

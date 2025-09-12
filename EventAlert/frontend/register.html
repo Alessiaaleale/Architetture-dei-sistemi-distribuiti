@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Registrazione Utente - EventAlert</title>
+</head>
+<body>
+  <h2>Registrazione Utente</h2>
+  <form id="registerForm">
+    <label>Nome:</label><br>
+    <input type="text" name="nome" required><br><br>
+
+    <label>Cognome:</label><br>
+    <input type="text" name="cognome" required><br><br>
+
+    <label>Età:</label><br>
+    <input type="number" name="eta" required min="0"><br><br>
+
+    <label>Email:</label><br>
+    <input type="email" name="email" required><br><br>
+
+    <label>Ruolo:</label><br>
+    <select name="ruolo" required>
+      <option value="utente">Utente</option>
+      <option value="admin">Admin</option>
+    </select><br><br>
+
+    <label>Password:</label><br>
+    <input type="password" name="password" required><br><br>
+
+    <h3>Interessi</h3>
+
+    <label><input type="checkbox" class="macro" data-group="musica"> Musica</label><br>
+    <div style="margin-left:20px;">
+      <label><input type="checkbox" class="sottotopic musica" value="pop"> Pop</label><br>
+      <label><input type="checkbox" class="sottotopic musica" value="jazz"> Jazz</label><br>
+      <label><input type="checkbox" class="sottotopic musica" value="house"> House</label><br>
+    </div>
+
+    <label><input type="checkbox" class="macro" data-group="sport"> Sport</label><br>
+    <div style="margin-left:20px;">
+      <label><input type="checkbox" class="sottotopic sport" value="calcio"> Calcio</label><br>
+      <label><input type="checkbox" class="sottotopic sport" value="tennis"> Tennis</label><br>
+      <label><input type="checkbox" class="sottotopic sport" value="sport_acquatico"> Sport acquatico</label><br>
+    </div>
+
+    <label><input type="checkbox" class="macro" data-group="musei"> Musei</label><br>
+    <div style="margin-left:20px;">
+      <label><input type="checkbox" class="sottotopic musei" value="arte_contemporanea"> Arte contemporanea</label><br>
+      <label><input type="checkbox" class="sottotopic musei" value="arte_classica"> Arte classica</label><br>
+      <label><input type="checkbox" class="sottotopic musei" value="arte_moderna"> Arte moderna</label><br>
+    </div>
+
+    <label><input type="checkbox" class="macro" data-group="cibo"> Cibo</label><br>
+    <div style="margin-left:20px;">
+      <label><input type="checkbox" class="sottotopic cibo" value="italiano"> Italiano</label><br>
+      <label><input type="checkbox" class="sottotopic cibo" value="asiatico"> Asiatico</label><br>
+      <label><input type="checkbox" class="sottotopic cibo" value="fast_food"> Fast food</label><br>
+    </div>
+
+    <br>
+    <button type="submit">Registrati</button>
+  </form>
+
+  <p id="response" style="font-weight:bold;"></p>
+
+  <p>Hai già un account? <a href="index.html">Torna alla pagina di login</a></p>
+
+  <script>
+    document.querySelectorAll('.macro').forEach(macro => {
+      macro.addEventListener('change', function () {
+        const group = this.dataset.group;
+        const checkboxes = document.querySelectorAll('.sottotopic.' + group);
+        checkboxes.forEach(cb => cb.checked = this.checked);
+      });
+    });
+
+    document.querySelectorAll('.sottotopic').forEach(st => {
+      st.addEventListener('change', function () {
+        const classList = this.classList;
+        for (let cls of classList) {
+          if (cls !== "sottotopic") {
+            const group = cls;
+            const all = document.querySelectorAll('.sottotopic.' + group);
+            const checked = document.querySelectorAll('.sottotopic.' + group + ':checked');
+            const macro = document.querySelector('.macro[data-group="' + group + '"]');
+            macro.checked = all.length === checked.length;
+          }
+        }
+      });
+    });
+    
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = e.target;
+
+      const sottotopic = Array.from(document.querySelectorAll('.sottotopic:checked'))
+                              .map(cb => cb.value);
+
+      const data = {
+        nome: form.nome.value,
+        cognome: form.cognome.value,
+        eta: parseInt(form.eta.value),
+        email: form.email.value,
+        password: form.password.value,
+        ruolo: form.ruolo.value,
+        interessi: sottotopic
+      };
+
+      const response = await fetch('http://localhost:8080/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      const responseBox = document.getElementById('response');
+      responseBox.innerText = result.message || result.error;
+
+      if (response.ok) {
+        responseBox.style.color = "green";
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1000);  
+      } else {
+        responseBox.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

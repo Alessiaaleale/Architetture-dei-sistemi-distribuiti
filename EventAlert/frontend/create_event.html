@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Crea Evento - Event Alert</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #2c3e50;
+      height: 100vh;
+      color: white;
+      padding-top: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 12px 20px;
+      color: white;
+      text-decoration: none;
+    }
+
+    .sidebar a:hover {
+      background-color: #34495e;
+    }
+
+    .content {
+      padding: 20px;
+      flex-grow: 1;
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <a id="homepageLink" href="#">🏠 Homepage</a>
+    <a id="createEventLink" href="#">📝 Crea il tuo evento</a>
+    <a id="ticketsLink" href="#">🎫 I tuoi biglietti</a>
+    <a href="#">📅 I tuoi eventi</a>
+    <a id="accountLink" href="#">👤 Account</a>
+  </div>
+
+  <div class="content">
+    <h1>Crea un nuovo evento</h1>
+
+    <form id="eventForm">
+      <label>Interesse:</label><br>
+      <select name="interesse" required>
+        <option value="jazz">Jazz</option>
+        <option value="pop">Pop</option>
+        <option value="house">House</option>
+        <option value="calcio">Calcio</option>
+        <option value="tennis">Tennis</option>
+        <option value="sport_acquatico">Sport acquatico</option>
+        <option value="italiano">Italiano</option>
+        <option value="asiatico">Asiatico</option>
+        <option value="fast_food">Fast food</option>
+        <option value="arte_contemporanea">Arte contemporanea</option>
+        <option value="arte_classica">Arte classica</option>
+        <option value="arte_moderna">Arte moderna</option>
+      </select><br><br>
+
+      <label>Data evento:</label><br>
+      <input type="date" name="data_evento" required><br><br>
+
+      <label>Ora evento:</label><br>
+      <input type="time" name="ora_evento" required><br><br>
+
+      <label>Luogo evento:</label><br>
+      <input type="text" name="luogo_evento" required><br><br>
+
+      <label>Descrizione evento:</label><br>
+      <textarea name="descrizione" rows="4" required></textarea><br><br>
+
+      <button type="submit">Crea evento</button>
+    </form>
+
+    <p id="esito" style="font-weight:bold;"></p>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function getEmail() {
+        const urlEmail = new URLSearchParams(window.location.search).get('email');
+        if (urlEmail) {
+          sessionStorage.setItem('email', urlEmail);
+          return urlEmail;
+        }
+        return sessionStorage.getItem('email');
+      }
+
+      function aggiornaLinkSidebar() {
+        const email = getEmail();
+        if (!email) return;
+
+        document.getElementById('homepageLink').href = `main_admin.html?email=${encodeURIComponent(email)}`;
+        document.getElementById('accountLink').href = `account.html?email=${encodeURIComponent(email)}`;
+        document.getElementById('ticketsLink').href = `tickets.html?email=${encodeURIComponent(email)}`;
+        document.getElementById('createEventLink').href = `create_event.html?email=${encodeURIComponent(email)}`;
+      }
+
+      aggiornaLinkSidebar();
+
+      document.getElementById('eventForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const form = e.target;
+
+        const data = {
+          interesse: form.interesse.value,
+          data_evento: form.data_evento.value,
+          ora_evento: form.ora_evento.value,
+          luogo_evento: form.luogo_evento.value,
+          descrizione: form.descrizione.value,
+          email: getEmail() 
+        };
+
+        try {
+          const response = await fetch('http://localhost:8080/create_event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          const result = await response.json();
+          const box = document.getElementById('esito');
+          box.innerText = result.message || result.error;
+          box.style.color = response.ok ? 'green' : 'red';
+
+          if (response.ok) {
+            form.reset();
+          }
+        } catch (error) {
+          console.error("Errore nella creazione evento:", error);
+          document.getElementById('esito').innerText = "Errore di connessione al server.";
+          document.getElementById('esito').style.color = "red";
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

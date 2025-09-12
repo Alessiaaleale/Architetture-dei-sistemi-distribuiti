@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>I tuoi biglietti - Event Alert</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #2c3e50;
+      height: 100vh;
+      color: white;
+      padding-top: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 12px 20px;
+      color: white;
+      text-decoration: none;
+    }
+
+    .sidebar a:hover {
+      background-color: #34495e;
+    }
+
+    .content {
+      padding: 20px;
+      flex-grow: 1;
+    }
+
+    .event {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar" id="sidebar"></div>
+
+  <div class="content">
+    <h1>I tuoi biglietti</h1>
+    <div id="ticketContainer">Caricamento biglietti...</div>
+  </div>
+
+  <script>
+    function getEmail() {
+      const urlEmail = new URLSearchParams(window.location.search).get('email');
+      if (urlEmail) {
+        sessionStorage.setItem('email', urlEmail);
+        return urlEmail;
+      }
+      return sessionStorage.getItem('email');
+    }
+
+    async function caricaBiglietti() {
+      const email = getEmail();
+      const container = document.getElementById('ticketContainer');
+      const sidebar = document.getElementById("sidebar");
+      container.innerHTML = "Caricamento biglietti...";
+
+      if (!email) {
+        container.innerHTML = "Errore: email non specificata.";
+        return;
+      }
+
+      try {
+       
+        const accResp = await fetch("http://localhost:8080/account?email=" + encodeURIComponent(email));
+        const accData = await accResp.json();
+
+        if (accData.ruolo === "admin") {
+          sidebar.innerHTML = `
+            <a href="main_admin.html?email=${encodeURIComponent(email)}">🏠 Homepage</a>
+            <a href="create_event.html?email=${encodeURIComponent(email)}">📝 Crea il tuo evento</a>
+            <a href="tickets.html?email=${encodeURIComponent(email)}">🎫 I tuoi biglietti</a>
+            <a href="#">📅 I tuoi eventi</a>
+            <a href="account.html?email=${encodeURIComponent(email)}">👤 Account</a>
+          `;
+        } else {
+          sidebar.innerHTML = `
+            <a href="main_utente.html?email=${encodeURIComponent(email)}">🏠 Homepage</a>
+            <a href="tickets.html?email=${encodeURIComponent(email)}">🎫 I tuoi biglietti</a>
+            <a href="account.html?email=${encodeURIComponent(email)}">👤 Account</a>
+          `;
+        }
+
+        const response = await fetch("http://localhost:8080/eventi_partecipati?email=" + encodeURIComponent(email));
+        const result = await response.json();
+
+        if (result.eventi && result.eventi.length > 0) {
+          container.innerHTML = "";
+
+          const today = new Date().toISOString().split("T")[0];
+
+          const eventiValidi = result.eventi.filter(evento => {
+            return evento.data_evento >= today;
+          });
+
+          if (eventiValidi.length > 0) {
+            eventiValidi.forEach(evento => {
+              const div = document.createElement("div");
+              div.className = "event";
+              div.innerHTML = `
+                <strong>Interesse:</strong> ${evento.interesse} <br>
+                <strong>Data:</strong> ${evento.data_evento} <br>
+                <strong>Ora:</strong> ${evento.ora_evento} <br>
+                <strong>Luogo:</strong> ${evento.luogo_evento} <br>
+                <strong>Origine:</strong> ${evento.origine} <br>
+                <strong>Descrizione:</strong> ${evento.descrizione} <br>
+                <button onclick="annullaPartecipazione('${evento.id_evento}')">❌ Annulla partecipazione</button>
+                `;
+              container.appendChild(div);
+            });
+          } else {
+            container.innerHTML = "<p>Non hai biglietti validi per eventi futuri.</p>";
+          }
+
+        } else {
+          container.innerHTML = "<p>Non hai ancora partecipato a nessun evento.</p>";
+        }
+
+      } catch (err) {
+        console.error("Errore caricamento biglietti:", err);
+        container.innerHTML = "Errore durante il caricamento dei biglietti.";
+      }
+    }
+
+    async function annullaPartecipazione(id_evento) {
+      const email = getEmail();
+
+      if (!confirm("Vuoi davvero annullare la partecipazione a questo evento?")) {
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:8080/annulla_partecipazione", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email, id_evento: id_evento })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert("Partecipazione annullata con successo!");
+          caricaBiglietti(); 
+        } else {
+          alert("Errore: " + (result.error || "impossibile annullare la partecipazione"));
+        }
+      } catch (err) {
+        console.error("Errore annullamento partecipazione:", err);
+        alert("Errore durante l'annullamento della partecipazione.");
+      }
+    }
+
+    caricaBiglietti();
+  </script>
+
+</body>
+</html>
