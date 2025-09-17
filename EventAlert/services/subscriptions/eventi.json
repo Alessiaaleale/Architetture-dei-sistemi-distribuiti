@@ -1,0 +1,47 @@
+[
+  {
+    "interesse": "arte_classica",
+    "data_evento": "2025-10-17",
+    "ora_evento": "16:00",
+    "luogo_evento": "Roma  Terme di Diocleziano",
+    "descrizione": "Percorso imperdibile tra capolavori dell'antichità.",
+    "data_pubblicazione": "2025-09-17",
+    "origine": "origine_esterna"
+  },
+  {
+    "interesse": "pop",
+    "data_evento": "2025-09-30",
+    "ora_evento": "21:00",
+    "luogo_evento": "Roma Ippodromo delle Capannelle",
+    "descrizione": "Live show imperdibile con scaletta dei grandi successi.",
+    "data_pubblicazione": "2025-09-17",
+    "origine": "origine_esterna"
+  },
+  {
+    "interesse": "jazz",
+    "data_evento": "2025-09-30",
+    "ora_evento": "16:00",
+    "luogo_evento": "Roma Auditorium Parco della Musica",
+    "descrizione": "Concerto straordinario di Groove Society con jam session finale.",
+    "data_pubblicazione": "2025-09-17",
+    "origine": "origine_esterna"
+  },
+  {
+    "interesse": "tennis",
+    "data_evento": "2025-09-22",
+    "ora_evento": "21:00",
+    "luogo_evento": "Roma Foro Italico",
+    "descrizione": "Torneo straordinario con qualificazioni e finali in giornata.",
+    "data_pubblicazione": "2025-09-17",
+    "origine": "origine_esterna"
+  },
+  {
+    "interesse": "calcio",
+    "data_evento": "2025-10-17",
+    "ora_evento": "19:30",
+    "luogo_evento": "Frosinone Stadio Benito Stirpe",
+    "descrizione": "Partita unico di campionato tra squadre locali.",
+    "data_pubblicazione": "2025-09-17",
+    "origine": "origine_esterna"
+  }
+]

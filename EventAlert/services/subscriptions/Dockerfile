@@ -6,5 +6,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
+COPY eventi.json .
 
-CMD ["bash", "-c", "python cassandra_init.py && python app.py"]
+
+CMD ["bash", "-c", "python cassandra_init.py && python load_events.py && python app.py"]

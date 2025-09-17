@@ -106,7 +106,7 @@
       ticketsLink.href = `tickets.html?email=${encodeURIComponent(email)}`;
 
       try {
-        const now = new Date().toISOString().slice(0,19);
+        const now = new Date().toISOString().slice(0,19); 
         const response = await fetch("http://localhost:8080/eventi_utente?email=" + encodeURIComponent(email) + "&now=" + encodeURIComponent(now));
         const result = await response.json();
 

@@ -73,7 +73,7 @@
       }
 
       try {
-       
+        
         const accResp = await fetch("http://localhost:8080/account?email=" + encodeURIComponent(email));
         const accData = await accResp.json();
 
@@ -82,7 +82,6 @@
             <a href="main_admin.html?email=${encodeURIComponent(email)}">🏠 Homepage</a>
             <a href="create_event.html?email=${encodeURIComponent(email)}">📝 Crea il tuo evento</a>
             <a href="tickets.html?email=${encodeURIComponent(email)}">🎫 I tuoi biglietti</a>
-            <a href="#">📅 I tuoi eventi</a>
             <a href="account.html?email=${encodeURIComponent(email)}">👤 Account</a>
           `;
         } else {
@@ -92,14 +91,14 @@
             <a href="account.html?email=${encodeURIComponent(email)}">👤 Account</a>
           `;
         }
-
+ 
         const response = await fetch("http://localhost:8080/eventi_partecipati?email=" + encodeURIComponent(email));
         const result = await response.json();
 
         if (result.eventi && result.eventi.length > 0) {
           container.innerHTML = "";
 
-          const today = new Date().toISOString().split("T")[0];
+          const today = new Date().toISOString().split("T")[0]; 
 
           const eventiValidi = result.eventi.filter(evento => {
             return evento.data_evento >= today;

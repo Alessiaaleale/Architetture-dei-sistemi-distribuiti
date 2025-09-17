@@ -45,7 +45,6 @@
     <a id="homepageLink" href='#'>🏠 Homepage</a>
     <a id="createEventLink" href="#">📝 Crea il tuo evento</a>
     <a id="ticketsLink"href="#">🎫 I tuoi biglietti</a>
-    <a id="iTuoiEventiLink" href="#">📅 I tuoi eventi</a>
     <a id="accountLink" href="#">👤 Account</a>
   </div>
 
@@ -104,7 +103,6 @@
       const accountLink = document.getElementById("accountLink");
       const ticketsLink = document.getElementById("ticketsLink");
       const createEventLink = document.getElementById("createEventLink");
-      const iTuoiEventiLink = document.getElementById("iTuoiEventiLink");
       
 
       if (!email) {
@@ -118,7 +116,6 @@
       accountLink.href = `account.html?email=${encodeURIComponent(email)}`;
       ticketsLink.href = `tickets.html?email=${encodeURIComponent(email)}`;
       createEventLink.href = `create_event.html?email=${encodeURIComponent(email)}`;
-      iTuoiEventiLink.href = `eventi_admin.html?email=${encodeURIComponent(email)}`;
       
       try {
         const now = new Date().toISOString().slice(0,19); 

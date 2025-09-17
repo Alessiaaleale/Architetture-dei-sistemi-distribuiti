@@ -51,6 +51,7 @@ def parse_client_now(arg_now: str | None) -> datetime:
             return dt
         except ValueError:
             continue
+    # fallback sicuro
     return datetime.now()
 
 def row_to_dict(row) -> dict:
@@ -69,7 +70,6 @@ def row_to_dict(row) -> dict:
 def redirect_to_login():
     return redirect(url_for('index'))
 
-# REGISTRAZIONE
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.get_json()
@@ -88,7 +88,6 @@ def register_user():
 
     session = get_db_session()
 
-    # Controllo duplicato email
     existing_user = session.execute(
         "SELECT email FROM users WHERE email = %s",
         (email,)
@@ -111,7 +110,6 @@ def register_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# CREAZIONE EVENTO
 @app.route('/create_event', methods=['POST'])
 def create_event():
     producer = KafkaProducer(
@@ -130,10 +128,10 @@ def create_event():
     ora_evento = data['ora_evento']
     luogo_evento = data['luogo_evento']
     descrizione = data['descrizione']
-    origine =  data.get('email',)
+    origine = "admin"
     data_pubblicazione = date.today()
 
-    id_evento = f"{interesse}{data_evento}{ora_evento.replace(':', '')}_{str(uuid.uuid4())[:8]}"
+    id_evento = f"{data_evento.strftime('%Y%m%d')}_{ora_evento.replace(':', '')}_{luogo_evento.replace(' ', '_')}_{origine}"
 
     existing = session.execute(
         "SELECT id_evento FROM events WHERE id_evento = %s",
@@ -166,7 +164,6 @@ def create_event():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# LOGIN
 @app.route('/index', methods=['POST'])
 def login_user():
     data = request.get_json()
@@ -204,87 +201,34 @@ def login_user():
     else:
         return jsonify({'error': 'Ruolo non riconosciuto'}), 400
 
-# EVENTI ADMIN 
-@app.route('/eventi_admin', methods=['GET'])
+@app.route('/eventi_admin')
 def eventi_admin():
     email = request.args.get('email')
-    client_now = request.args.get('now')
+    client_now = request.args.get('now')  
     if not email:
         return jsonify({'error': 'Email non specificata'}), 400
 
     session = get_db_session()
+    query_user = session.execute("SELECT interessi FROM users WHERE email = %s", [email])
+    user = query_user.one()
 
-    user_row = session.execute("SELECT ruolo, interessi FROM users WHERE email = %s", [email]).one()
-    if not user_row:
+    if not user:
         return jsonify({'error': 'Utente non trovato'}), 404
 
-    if user_row.ruolo == "admin":
-        rows = session.execute("""
-            SELECT id_evento, interesse, data_pubblicazione, data_evento,
-                   ora_evento, luogo_evento, descrizione, origine
-            FROM events
-            WHERE origine=%s ALLOW FILTERING
-        """, [email])
-
-        eventi = []
-        for row in rows:
-            eventi.append({
-                "id_evento": row.id_evento,
-                "interesse": row.interesse,
-                "data_pubblicazione": str(row.data_pubblicazione),
-                "data_evento": str(row.data_evento),
-                "ora_evento": row.ora_evento,
-                "luogo_evento": row.luogo_evento,
-                "descrizione": row.descrizione,
-                "origine": row.origine
-            })
-        return jsonify({"eventi": eventi})
-
-    else:
-        now = parse_client_now(client_now)
-        interessi = user_row.interessi
-        eventi = []
-
-        for interesse in interessi:
-            rows = session.execute("SELECT * FROM events WHERE interesse = %s ALLOW FILTERING", [interesse])
-            for row in rows:
-                evento_dt = combine_event_datetime(row)
-                if evento_dt >= now:
-                    eventi.append((evento_dt, row_to_dict(row)))
-
-        eventi.sort(key=lambda x: x[0])
-        return jsonify({'eventi': [e[1] for e in eventi]})
-
-@app.route('/eventi_admin_creati', methods=['GET'])
-def eventi_admin_creati():
-    email = request.args.get('email')
-    if not email:
-        return jsonify({"error": "Email non specificata"}), 400
-
-    session = get_db_session()
-    rows = session.execute("""
-        SELECT id_evento, interesse, data_pubblicazione, data_evento,
-               ora_evento, luogo_evento, descrizione, origine
-        FROM events
-        WHERE origine = %s ALLOW FILTERING
-    """, [email])
-
+    now = parse_client_now(client_now)
+    interessi = user.interessi
     eventi = []
-    for row in rows:
-        eventi.append({
-            "id_evento": row.id_evento,
-            "interesse": row.interesse,
-            "data_pubblicazione": str(row.data_pubblicazione),
-            "data_evento": str(row.data_evento),
-            "ora_evento": row.ora_evento,
-            "luogo_evento": row.luogo_evento,
-            "descrizione": row.descrizione,
-            "origine": row.origine
-        })
 
-    return jsonify(eventi)
+    for interesse in interessi:
+        rows = session.execute("SELECT * FROM events WHERE interesse = %s ALLOW FILTERING", [interesse])
+        for row in rows:
+            evento_dt = combine_event_datetime(row)
+            if evento_dt >= now:
+                eventi.append((evento_dt, row_to_dict(row)))
 
-# EVENTI UTENTE 
+    eventi.sort(key=lambda x: x[0])
+    return jsonify({'eventi': [e[1] for e in eventi]})
+
 @app.route('/main_utente')
 def main_utente():
     email = request.args.get('email')
@@ -310,7 +254,7 @@ def main_utente():
 @app.route('/eventi_utente', methods=['GET'])
 def eventi_utente():
     email = request.args.get('email')
-    client_now = request.args.get('now')  
+    client_now = request.args.get('now') 
     if not email:
         return jsonify({'error': 'Email non specificata'}), 400
 
