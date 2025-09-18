@@ -41,12 +41,14 @@
 </head>
 <body>
 
+  <!-- Sidebar utente -->
   <div class="sidebar">
     <a id="homepageLink" href="#">🏠 Homepage</a>
     <a id="ticketsLink"href="#">🎫 I tuoi biglietti</a>
     <a id="accountLink" href="#">👤 Account</a>
   </div>
 
+  <!-- Contenuto principale -->
   <div class="content">
     <h1>Event Alert - Utente Page</h1>
     <p id="welcomeText">Benvenuto utente!</p>
@@ -101,12 +103,13 @@
 
       welcome.innerText = 'Benvenuto utente!';
 
+      
       homepageLink.href = `main_utente.html?email=${encodeURIComponent(email)}`;
       accountLink.href = `account.html?email=${encodeURIComponent(email)}`;
       ticketsLink.href = `tickets.html?email=${encodeURIComponent(email)}`;
 
       try {
-        const now = new Date().toISOString().slice(0,19); 
+        const now = new Date().toISOString().slice(0,19); // "YYYY-MM-DDTHH:MM:SS"
         const response = await fetch("http://localhost:8080/eventi_utente?email=" + encodeURIComponent(email) + "&now=" + encodeURIComponent(now));
         const result = await response.json();
 

@@ -3,6 +3,7 @@ import redis
 import json
 import logging
 
+# Configura logging
 logging.basicConfig(level=logging.INFO)
 
 # Connessione a Redis

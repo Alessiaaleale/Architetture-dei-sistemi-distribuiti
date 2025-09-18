@@ -37,7 +37,7 @@ def main():
             data_pubblicazione = datetime.strptime(evento['data_pubblicazione'], "%Y-%m-%d").date()
             origine = evento['origine']
 
-            id_evento = f"{data_evento.strftime('%Y%m%d')}_{ora_evento.replace(':', '')}_{luogo_evento.replace(' ', '_')}_{origine}"
+            id_evento = f"{data_evento.strftime('%Y%m%d')}_{ora_evento.replace(':', '')}_{luogo_evento.replace(' ', '_')}_{origine}_{interesse}"
             # Verifica se l'evento esiste già
             existing = session.execute(
                 "SELECT id_evento FROM events WHERE id_evento = %s", (id_evento,)

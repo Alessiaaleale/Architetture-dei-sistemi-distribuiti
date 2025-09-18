@@ -12,6 +12,9 @@ CORS(app)
 
 redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
 
+# ---------------------------
+# Utilità robuste su date/ore
+# ---------------------------
 def get_db_session():
     cluster = Cluster(['cassandra'])
     session = cluster.connect()
@@ -19,15 +22,26 @@ def get_db_session():
     return session
 
 def to_py_date(cass_date) -> date:
+    """
+    Converte il tipo Cassandra (es. cassandra.util.Date) in datetime.date.
+    Se è già un datetime.date lo ritorna; altrimenti prova a costruirlo
+    da .year/.month/.day oppure da stringa 'YYYY-MM-DD'.
+    """
     if isinstance(cass_date, date):
         return cass_date
     try:
         return date(cass_date.year, cass_date.month, cass_date.day)
     except Exception:
+        # fallback su parsing stringa
         return datetime.strptime(str(cass_date), "%Y-%m-%d").date()
 
 def combine_event_datetime(row) -> datetime:
+    """
+    Combina row.data_evento (DATE in Cassandra) e row.ora_evento ('HH:MM' TEXT)
+    in un datetime Python confrontabile.
+    """
     d = to_py_date(row.data_evento)
+    # accetta 'HH:MM' o 'HH:MM:SS' (i form input generano 'HH:MM')
     raw = str(row.ora_evento).strip()
     try:
         tm = datetime.strptime(raw[:5], "%H:%M").time()
@@ -36,6 +50,11 @@ def combine_event_datetime(row) -> datetime:
     return datetime.combine(d, tm)
 
 def parse_client_now(arg_now: str | None) -> datetime:
+    """
+    Se il frontend passa ?now=... usa quello, altrimenti datetime.now().
+    Formati accettati: 'YYYY-MM-DDTHH:MM[:SS]' oppure con spazio al posto della 'T',
+    oppure solo data 'YYYY-MM-DD' (in quel caso 00:00).
+    """
     if not arg_now:
         return datetime.now()
     candidates = [
@@ -66,15 +85,21 @@ def row_to_dict(row) -> dict:
         'descrizione': row.descrizione
     }
 
+# ---------------------------
+# Routing
+# ---------------------------
 @app.route('/')
 def redirect_to_login():
     return redirect(url_for('index'))
 
+# ==========================
+# REGISTRAZIONE
+# ==========================
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.get_json()
 
-    required_fields = ['nome', 'cognome', 'email', 'ruolo', 'eta', 'password']
+    required_fields = ['nome', 'cognome', 'email', 'ruolo', 'eta', 'password', 'interessi']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Dati mancanti'}), 400
 
@@ -83,11 +108,12 @@ def register_user():
 
     email = data['email']
     eta = data['eta']
-    interessi = data.get('interessi', [])
+    interessi = data['interessi']
     password = data['password']
 
     session = get_db_session()
 
+    # Controllo duplicato email
     existing_user = session.execute(
         "SELECT email FROM users WHERE email = %s",
         (email,)
@@ -110,6 +136,9 @@ def register_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ==========================
+# CREAZIONE EVENTO
+# ==========================
 @app.route('/create_event', methods=['POST'])
 def create_event():
     producer = KafkaProducer(
@@ -131,14 +160,14 @@ def create_event():
     origine = "admin"
     data_pubblicazione = date.today()
 
-    id_evento = f"{data_evento.strftime('%Y%m%d')}_{ora_evento.replace(':', '')}_{luogo_evento.replace(' ', '_')}_{origine}"
+    id_evento = f"{data_evento.strftime('%Y%m%d')}_{ora_evento.replace(':', '')}_{luogo_evento.replace(' ', '_')}_{origine}_{interesse}"
 
     existing = session.execute(
         "SELECT id_evento FROM events WHERE id_evento = %s",
         (id_evento,)
     ).one()
     if existing:
-        return jsonify({'error': 'Evento già esistente'}), 400
+        return jsonify({'error': 'Evento esistente'}), 400
 
     try:
         session.execute(
@@ -164,6 +193,9 @@ def create_event():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ==========================
+# LOGIN
+# ==========================
 @app.route('/index', methods=['POST'])
 def login_user():
     data = request.get_json()
@@ -186,6 +218,7 @@ def login_user():
     if user.password != password:
         return jsonify({'error': 'Password errata'}), 401
 
+    # Redirige alla pagina in base al ruolo
     if user.ruolo == 'admin':
         return jsonify({
             'redirect': f'main_admin.html?email={email}',
@@ -201,8 +234,33 @@ def login_user():
     else:
         return jsonify({'error': 'Ruolo non riconosciuto'}), 400
 
-@app.route('/eventi_admin')
-def eventi_admin():
+# ==========================
+# EVENTI UTENTE (solo futuri)
+# ==========================
+#@app.route('/main_utente', methods=['GET'])
+#def main_utente():
+#    email = request.args.get('email')
+#    if not email:
+#        return "Email non specificata", 400
+#
+#    session = get_db_session()
+#
+#    query_user = session.execute("SELECT interessi FROM users WHERE email = %s", [email])
+#    user = query_user.one()
+#    if not user:
+#        return "Utente non trovato", 404
+#
+#    interessi = user.interessi
+#    eventi = []
+#
+#    for interesse in interessi:
+#        rows = session.execute("SELECT * FROM events WHERE interesse = %s ALLOW FILTERING", [interesse])
+#        eventi.extend(rows)
+#
+#    return render_template("main_utente.html", eventi=eventi, email=email)
+
+@app.route('/eventi_utente', methods=['GET'])
+def eventi_utente():
     email = request.args.get('email')
     client_now = request.args.get('now')  
     if not email:
@@ -211,61 +269,13 @@ def eventi_admin():
     session = get_db_session()
     query_user = session.execute("SELECT interessi FROM users WHERE email = %s", [email])
     user = query_user.one()
-
     if not user:
         return jsonify({'error': 'Utente non trovato'}), 404
 
     now = parse_client_now(client_now)
     interessi = user.interessi
-    eventi = []
-
-    for interesse in interessi:
-        rows = session.execute("SELECT * FROM events WHERE interesse = %s ALLOW FILTERING", [interesse])
-        for row in rows:
-            evento_dt = combine_event_datetime(row)
-            if evento_dt >= now:
-                eventi.append((evento_dt, row_to_dict(row)))
-
-    eventi.sort(key=lambda x: x[0])
-    return jsonify({'eventi': [e[1] for e in eventi]})
-
-@app.route('/main_utente')
-def main_utente():
-    email = request.args.get('email')
-    if not email:
-        return "Email non specificata", 400
-
-    session = get_db_session()
-
-    query_user = session.execute("SELECT interessi FROM users WHERE email = %s", [email])
-    user = query_user.one()
-    if not user:
-        return "Utente non trovato", 404
-
-    interessi = user.interessi
-    eventi = []
-
-    for interesse in interessi:
-        rows = session.execute("SELECT * FROM events WHERE interesse = %s ALLOW FILTERING", [interesse])
-        eventi.extend(rows)
-
-    return render_template("main_utente.html", eventi=eventi, email=email)
-
-@app.route('/eventi_utente', methods=['GET'])
-def eventi_utente():
-    email = request.args.get('email')
-    client_now = request.args.get('now') 
-    if not email:
-        return jsonify({'error': 'Email non specificata'}), 400
-
-    session = get_db_session()
-    query_user = session.execute("SELECT interessi FROM users WHERE email = %s", [email])
-    user = query_user.one()
-    if not user:
-        return jsonify({'error': 'Utente non trovato'}), 404
-
-    now = parse_client_now(client_now)
-    interessi = user.interessi
+    if not interessi or not isinstance(interessi, list):
+        return jsonify({'error': "Nessun interesse associato all'utente"}), 404
     eventi = []
 
     for interesse in interessi:
@@ -284,6 +294,10 @@ def eventi_utente():
                     'descrizione': row.descrizione
                 }))
 
+    if not eventi:
+        return jsonify({'message': 'Nessun evento disponibile per gli interessi dell\'utente'}), 200
+    
+    # ordina dal più imminente
     eventi.sort(key=lambda x: x[0])
     return jsonify({'eventi': [e[1] for e in eventi]})
 
@@ -317,6 +331,9 @@ def update_interessi():
 
     if not email or interessi is None:
         return jsonify({"error": "Email o interessi mancanti"}), 400
+    
+    if not isinstance(interessi, list) or len(interessi) == 0:
+        return jsonify({"error": "Deve essere selezionato almeno un interesse"}), 400
 
     session = get_db_session()
     session.execute(
@@ -325,6 +342,7 @@ def update_interessi():
     )
 
     return jsonify({"message": "Interessi aggiornati con successo!"})
+
 
 @app.route('/partecipa_evento', methods=['POST'])
 def partecipa_evento():
@@ -343,6 +361,7 @@ def partecipa_evento():
 
     return jsonify({"message": "Partecipazione registrata con successo!"})
 
+
 @app.route('/eventi_partecipati', methods=['GET'])
 def eventi_partecipati():
     email = request.args.get("email")
@@ -354,6 +373,7 @@ def eventi_partecipati():
 
     eventi_ids = [row.id_evento for row in rows]
 
+    # Recupera dettagli eventi
     eventi = []
     for eid in eventi_ids:
         row = session.execute("SELECT * FROM events WHERE id_evento=%s", [eid]).one()
@@ -387,5 +407,8 @@ def annulla_partecipazione():
 
     return jsonify({"message": "Partecipazione annullata con successo!"})
 
+# ==========================
+# MAIN
+# ==========================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

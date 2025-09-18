@@ -112,13 +112,15 @@
 
       welcome.innerText =' Benvenuto amministratore!';
 
+      // Aggiorna link homepage
       homepageLink.href = `main_admin.html?email=${encodeURIComponent(email)}`;
       accountLink.href = `account.html?email=${encodeURIComponent(email)}`;
       ticketsLink.href = `tickets.html?email=${encodeURIComponent(email)}`;
       createEventLink.href = `create_event.html?email=${encodeURIComponent(email)}`;
       
+
       try {
-        const now = new Date().toISOString().slice(0,19); 
+        const now = new Date().toISOString().slice(0,19); // "YYYY-MM-DDTHH:MM:SS"
         const response = await fetch("http://localhost:8080/eventi_utente?email=" + encodeURIComponent(email) + "&now=" + encodeURIComponent(now));
         const result = await response.json();
 

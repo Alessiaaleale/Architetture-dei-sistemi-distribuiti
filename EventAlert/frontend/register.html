@@ -30,6 +30,8 @@
 
     <h3>Interessi</h3>
 
+    <!-- Interessi (macro e sotto-topic) -->
+    <!-- Musica -->
     <label><input type="checkbox" class="macro" data-group="musica"> Musica</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic musica" value="pop"> Pop</label><br>
@@ -37,6 +39,7 @@
       <label><input type="checkbox" class="sottotopic musica" value="house"> House</label><br>
     </div>
 
+    <!-- Sport -->
     <label><input type="checkbox" class="macro" data-group="sport"> Sport</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic sport" value="calcio"> Calcio</label><br>
@@ -44,6 +47,7 @@
       <label><input type="checkbox" class="sottotopic sport" value="sport_acquatico"> Sport acquatico</label><br>
     </div>
 
+    <!-- Musei -->
     <label><input type="checkbox" class="macro" data-group="musei"> Musei</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic musei" value="arte_contemporanea"> Arte contemporanea</label><br>
@@ -51,6 +55,7 @@
       <label><input type="checkbox" class="sottotopic musei" value="arte_moderna"> Arte moderna</label><br>
     </div>
 
+    <!-- Cibo -->
     <label><input type="checkbox" class="macro" data-group="cibo"> Cibo</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic cibo" value="italiano"> Italiano</label><br>
@@ -67,6 +72,7 @@
   <p>Hai già un account? <a href="index.html">Torna alla pagina di login</a></p>
 
   <script>
+    // Macro-topic logic
     document.querySelectorAll('.macro').forEach(macro => {
       macro.addEventListener('change', function () {
         const group = this.dataset.group;
@@ -75,6 +81,7 @@
       });
     });
 
+    // Sotto-topic logic: aggiorna macro se tutti selezionati
     document.querySelectorAll('.sottotopic').forEach(st => {
       st.addEventListener('change', function () {
         const classList = this.classList;
@@ -89,12 +96,21 @@
         }
       });
     });
+
+    // Submit logic
     document.getElementById('registerForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const form = e.target;
 
       const sottotopic = Array.from(document.querySelectorAll('.sottotopic:checked'))
                               .map(cb => cb.value);
+
+      if (sottotopic.length === 0) {
+        const responseBox = document.getElementById('response');
+        responseBox.innerText = "Seleziona almeno un interesse per registrarti.";
+        responseBox.style.color = "red";
+        return;
+      }
 
       const data = {
         nome: form.nome.value,
@@ -127,4 +143,21 @@
     });
   </script>
 </body>
+  <script>
+    const registerButton = document.querySelector('button[type="submit"]');
+    const allCheckboxes = document.querySelectorAll('.macro, .sottotopic');
+
+    function updateButtonState() {
+      const checked = document.querySelectorAll('.macro:checked, .sottotopic:checked');
+      registerButton.disabled = checked.length === 0;
+    }
+
+    // Inizializza lo stato del bottone
+    updateButtonState();
+
+    // Aggiorna lo stato ogni volta che cambia un checkbox
+    allCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateButtonState);
+    });
+  </script>
 </html>
