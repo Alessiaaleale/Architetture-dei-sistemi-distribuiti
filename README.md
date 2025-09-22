@@ -142,7 +142,7 @@ docker exec -it cassandra cqlsh
 curl http://localhost/api/
 ```
 
-### Registrare un utente ad un topic 
+### Registrazione di un utente 
 ```bash
 curl -X POST http://localhost/api/register -H "Content-Type: application/json" -d '{
     "nome": "Mario",
@@ -155,14 +155,9 @@ curl -X POST http://localhost/api/register -H "Content-Type: application/json" -
   }'
 ```
 
-### Ottenere gli eventi partecipati dall'utente 
+### Informazioni del profilo dell'utente 
 ```bash
-curl "http://localhost/api/eventi_partecipati?email=utente@example.com"
-```
-
-### Ottenere gli eventi di interesse per l'utente 
-```bash
-curl "http://localhost/api/eventi_utente?email=utente@example.com"
+curl "http://localhost/api/account?email=utente@example.com"
 ```
 
 ### Creazione di un evento 
@@ -188,6 +183,11 @@ curl -X PUT http://localhost/api/update_interessi \
   }'
 ```
 
+### Lista degli eventi di interesse per l'utente 
+```bash
+curl "http://localhost/api/eventi_utente?email=utente@example.com"
+```
+
 ### Partecipazione di un utente ad un evento
 ```bash
 curl -X POST http://localhost/api/partecipa_evento \
@@ -198,6 +198,11 @@ curl -X POST http://localhost/api/partecipa_evento \
   }'
 ```
 
+### Lista degli eventi partecipati dall'utente 
+```bash
+curl "http://localhost/api/eventi_partecipati?email=utente@example.com"
+```
+
 ### Eliminazione della partecipazione ad un evento da parte di un utente
 ```bash
 curl -X DELETE http://localhost/api/annulla_partecipazione \
@@ -206,9 +211,4 @@ curl -X DELETE http://localhost/api/annulla_partecipazione \
     "email": "utente@example.com",
     "id_evento": "ID_EVENTO_GENERATO"
   }'
-```
-
-### Informazioni del profilo dell'utente 
-```bash
-curl "http://localhost/api/account?email=utente@example.com"
 ```
