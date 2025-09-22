@@ -162,7 +162,7 @@ curl "http://localhost/api/account?email=utente@example.com"
 
 ### Creazione di un evento 
 ```bash
-curl -X POST http://localhost/api/create_event \ 
+curl -X POST http://localhost/api/create_event \
   -H "Content-Type: application/json" \
   -d '{
     "interesse": "jazz",
