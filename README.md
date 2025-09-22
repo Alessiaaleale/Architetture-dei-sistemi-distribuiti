@@ -122,9 +122,37 @@ docker logs -f dispatcher
 
 ## Comandi per testare le API 
 
-### Creare un evento 
+### Verificare lo stato del sistema 
 ```bash
-curl -X POST http://localhost/api/create_event \
+curl http://localhost/api/
+```
+
+### Registrare un utente ad un topic 
+```bash
+curl -X POST http://localhost/api/register -H "Content-Type: application/json" -d '{
+    "nome": "Mario",
+    "cognome": "Rossi",
+    "email": "utente@example.com",
+    "ruolo": "utente",
+    "eta": 25,
+    "password": "password123",
+    "interessi": ["pop", "house"]
+  }'
+```
+
+### Ottenere gli eventi partecipati dall'utente 
+```bash
+curl "http://localhost/api/eventi_partecipati?email=utente@example.com"
+```
+
+### Ottenere gli eventi di interesse per l'utente 
+```bash
+curl "http://localhost/api/eventi_utente?email=utente@example.com"
+```
+
+### Creazione di un evento 
+```bash
+curl -X POST http://localhost/api/create_event \ 
   -H "Content-Type: application/json" \
   -d '{
     "interesse": "jazz",
@@ -135,16 +163,37 @@ curl -X POST http://localhost/api/create_event \
   }'
 ```
 
-### Registrazione di un utente 
+### Aggiornamento degli interessi di un utente 
 ```bash
-curl -X POST http://localhost/api/register \
+ curl -X PUT http://localhost/api/update_interessi \ 
   -H "Content-Type: application/json" \
   -d '{
-    "nome": "Mario",
-    "cognome": "Rossi",
     "email": "utente@example.com",
-    "ruolo": "utente",
-    "eta": 25,
-    "password": "password123"
+    "interessi": ["jazz", "sport"]
   }'
+```
+
+### Partecipazione di un utente ad un evento
+```bash
+  curl -X POST http://localhost/api/partecipa_evento \ 
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "utente@example.com",
+    "id_evento": "ID_EVENTO_GENERATO"
+  }'
+```
+
+### Eliminazione della partecipazione ad un evento da parte di un utente
+```bash
+curl -X DELETE http://localhost/api/annulla_partecipazione \ 
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "utente@example.com",
+    "id_evento": "ID_EVENTO_GENERATO"
+  }'
+```
+
+### Informazioni del profilo dell'utente 
+```bash
+curl "http://localhost/api/account?email=utente@example.com"
 ```
