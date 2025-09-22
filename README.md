@@ -132,7 +132,22 @@ docker compose images
 ```bash
 docker exec -it cassandra cqlsh
 ```
-
+### Eliminare container Docker
+```bash
+docker rm nome_container
+```
+### Eliminare immagine Docker
+```bash
+docker rmi nome_immagine
+```
+### Eliminare volume
+```bash
+docker volume rm nome_volume
+```
+### Eliminare tutti i volumi non utilizzati
+```bash
+docker volume prune
+```
 ---
 
 ## Comandi per testare le API 
