@@ -175,7 +175,7 @@ curl -X POST http://localhost/api/create_event \
 
 ### Aggiornamento degli interessi di un utente 
 ```bash
-curl -X PUT http://localhost/api/update_interessi \ 
+curl -X PUT http://localhost/api/update_interessi \
   -H "Content-Type: application/json" \
   -d '{
     "email": "utente@example.com",
