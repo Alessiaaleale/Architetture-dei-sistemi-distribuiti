@@ -200,7 +200,7 @@ curl -X POST http://localhost/api/partecipa_evento \
 
 ### Eliminazione della partecipazione ad un evento da parte di un utente
 ```bash
-curl -X DELETE http://localhost/api/annulla_partecipazione \ 
+curl -X DELETE http://localhost/api/partecipa_evento \
   -H "Content-Type: application/json" \
   -d '{
     "email": "utente@example.com",
