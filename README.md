@@ -102,7 +102,7 @@ Per rendere i microservizi accessibili dall’esterno è stato introdotto un **r
 - **API REST** → raggiungibili su `http://localhost/api/...`  
 
 --- 
-## Comandi per l'avvio
+## Comandi utili
 
 ### Avvio dello stack
 ```bash
@@ -127,6 +127,10 @@ docker compose ps
 ### Visualizzare tutte le immagini Docker presenti sul sistema
 ```bash
 docker compose images
+```
+### Eseguire query sul database Cassandra
+```bash
+docker exec -it cassandra cqlsh
 ```
 
 ---
