@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, redirect
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from cassandra.cluster import Cluster
 from datetime import date, datetime
