@@ -112,10 +112,21 @@ docker compose up -d --build
 ```bash
 docker exec -it cassandra python /app/cassandra_init.py
 ```
-
 ### Log di un servizio (es. Dispatcher) 
 ```bash
 docker logs -f dispatcher
+```
+### Fermare tutti i container e cancellare i volumi
+```bash
+docker compose down
+```
+### Visualizzare tutti i container attivi
+```bash
+docker compose ps
+```
+### Visualizzare tutte le immagini Docker presenti sul sistema
+```bash
+docker compose images
 ```
 
 ---
