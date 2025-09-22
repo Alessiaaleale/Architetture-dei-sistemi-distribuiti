@@ -180,7 +180,7 @@ curl -X POST http://localhost/api/create_event \
 
 ### Aggiornamento degli interessi di un utente 
 ```bash
- curl -X PUT http://localhost/api/update_interessi \ 
+curl -X PUT http://localhost/api/update_interessi \ 
   -H "Content-Type: application/json" \
   -d '{
     "email": "utente@example.com",
@@ -190,7 +190,7 @@ curl -X POST http://localhost/api/create_event \
 
 ### Partecipazione di un utente ad un evento
 ```bash
-  curl -X POST http://localhost/api/partecipa_evento \ 
+curl -X POST http://localhost/api/partecipa_evento \
   -H "Content-Type: application/json" \
   -d '{
     "email": "utente@example.com",
