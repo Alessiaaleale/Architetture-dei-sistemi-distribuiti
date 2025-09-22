@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from cassandra.cluster import Cluster
-from datetime import date, datetime
+from datetime import date, datetime, time
 import socket
 import redis
 from kafka import KafkaProducer
@@ -113,8 +113,9 @@ def register_user():
     data = request.get_json()
 
     required_fields = ['nome', 'cognome', 'email', 'ruolo', 'eta', 'password', 'interessi']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Dati mancanti'}), 400
+    for field in required_fields:
+        if field not in data or (isinstance(data[field], str) and not data[field].strip()) or (isinstance(data[field], list) and not data[field]):
+            return jsonify({'error': f'Dato mancante o vuoto: {field}'}), 400
 
     if data['ruolo'] not in ['admin', 'utente']:
         return jsonify({'error': 'Ruolo non valido'}), 400
@@ -133,7 +134,7 @@ def register_user():
     ).one()
 
     if existing_user:
-        return jsonify({'error': 'Email già presente nel database'}), 400
+        return jsonify({'error': 'Email presente nel database'}), 400
 
     try:
         session.execute(
@@ -162,8 +163,25 @@ def create_event():
     )
     data = request.get_json()
     required_fields = ['interesse', 'data_evento', 'ora_evento', 'luogo_evento', 'descrizione']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Dati mancanti'}), 400
+    for field in required_fields:
+        if field not in data or (isinstance(data[field], str) and not data[field].strip()) or (isinstance(data[field], list) and not data[field]):
+            return jsonify({'error': f'Dato mancante o vuoto: {field}'}), 400
+
+    try:
+        ora_evento_obj = datetime.strptime(data['ora_evento'], "%H:%M").time()
+    except ValueError:
+        return jsonify({'error': 'Formato ora non valido. Usa HH:MM'}), 400
+
+    if not (time(0, 0) <= ora_evento_obj <= time(23, 59)):
+        return jsonify({'error': 'Orario non valido. Deve essere tra 00:00 e 23:59'}), 400
+    
+    try:
+        data_evento = datetime.strptime(data['data_evento'], "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({'error': 'Data non valida. Assicurati che il giorno e il mese siano corretti (formato YYYY-MM-DD)'}), 400
+
+    if data_evento < date.today():
+        return jsonify({'error': 'La data dell\'evento non può essere nel passato'}), 400
 
     session = get_db_session()
 
