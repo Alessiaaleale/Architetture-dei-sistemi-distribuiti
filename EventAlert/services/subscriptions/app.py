@@ -181,7 +181,7 @@ def create_event():
         return jsonify({'error': 'Data non valida. Assicurati che il giorno e il mese siano corretti (formato YYYY-MM-DD)'}), 400
 
     if data_evento < date.today():
-        return jsonify({'error': 'La data dell\'evento non può essere nel passato'}), 400
+        return jsonify({'error': 'La data dell\'evento non deve essere precedente ad oggi'}), 400
 
     session = get_db_session()
 
@@ -226,45 +226,45 @@ def create_event():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/index', methods=['POST'])
-def login_user():
-    '''
-    Endpoint per il login dell'utente
-    '''
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-
-    if not email or not password:
-        return jsonify({'error': 'Email e password obbligatorie'}), 400
-
-    session = get_db_session()
-    user = session.execute(
-        "SELECT password, ruolo FROM users WHERE email = %s",
-        (email,)
-    ).one()
-
-    if not user:
-        return jsonify({'error': 'Utente non trovato'}), 404
-
-    if user.password != password:
-        return jsonify({'error': 'Password errata'}), 401
-
-    # Redirect alla pagina in base al ruolo
-    if user.ruolo == 'admin':
-        return jsonify({
-            'redirect': f'main_admin.html?email={email}',
-            'ruolo': 'admin',
-            'email': email
-        })
-    elif user.ruolo == 'utente':
-        return jsonify({
-            'redirect': f'main_utente.html?email={email}',
-            'ruolo': 'utente',
-            'email': email
-        })
-    else:
-        return jsonify({'error': 'Ruolo non riconosciuto'}), 400
+#@app.route('/index', methods=['POST'])
+#def login_user():
+#    '''
+#    Endpoint per il login dell'utente
+#    '''
+#    data = request.get_json()
+#    email = data.get('email')
+#    password = data.get('password')
+#
+#    if not email or not password:
+#        return jsonify({'error': 'Email e password obbligatorie'}), 400
+#
+#    session = get_db_session()
+#    user = session.execute(
+#        "SELECT password, ruolo FROM users WHERE email = %s",
+#        (email,)
+#    ).one()
+#
+#    if not user:
+#        return jsonify({'error': 'Utente non trovato'}), 404
+#
+#    if user.password != password:
+#        return jsonify({'error': 'Password errata'}), 401
+#
+#    # Redirect alla pagina in base al ruolo
+#    if user.ruolo == 'admin':
+#        return jsonify({
+#            'redirect': f'main_admin.html?email={email}',
+#            'ruolo': 'admin',
+#            'email': email
+#        })
+#    elif user.ruolo == 'utente':
+#        return jsonify({
+#            'redirect': f'main_utente.html?email={email}',
+#            'ruolo': 'utente',
+#            'email': email
+#        })
+#    else:
+#        return jsonify({'error': 'Ruolo non riconosciuto'}), 400
 
 @app.route('/eventi_utente', methods=['GET'])
 def eventi_utente():
@@ -315,9 +315,12 @@ def get_account():
     '''
     Endpoint per ottenere i dettagli dell'account utente
     ''' 
-    email = request.args.get('email')
-    if not email:
-        return jsonify({'error': 'Email mancante'}), 400
+    data = request.get_json()
+    email = data.get("email")
+    interessi = data.get("interessi")
+    
+    if not email or interessi is None:
+        return jsonify({"error": "Email o interessi mancanti"}), 400
 
     session = get_db_session()
     row = session.execute("SELECT nome, cognome, email, eta, ruolo, interessi FROM users WHERE email=%s", [email]).one()
