@@ -30,8 +30,6 @@
 
     <h3>Interessi</h3>
 
-    <!-- Interessi (macro e sotto-topic) -->
-    <!-- Musica -->
     <label><input type="checkbox" class="macro" data-group="musica"> Musica</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic musica" value="pop"> Pop</label><br>
@@ -39,7 +37,6 @@
       <label><input type="checkbox" class="sottotopic musica" value="house"> House</label><br>
     </div>
 
-    <!-- Sport -->
     <label><input type="checkbox" class="macro" data-group="sport"> Sport</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic sport" value="calcio"> Calcio</label><br>
@@ -47,7 +44,6 @@
       <label><input type="checkbox" class="sottotopic sport" value="sport_acquatico"> Sport acquatico</label><br>
     </div>
 
-    <!-- Musei -->
     <label><input type="checkbox" class="macro" data-group="musei"> Musei</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic musei" value="arte_contemporanea"> Arte contemporanea</label><br>
@@ -55,7 +51,6 @@
       <label><input type="checkbox" class="sottotopic musei" value="arte_moderna"> Arte moderna</label><br>
     </div>
 
-    <!-- Cibo -->
     <label><input type="checkbox" class="macro" data-group="cibo"> Cibo</label><br>
     <div style="margin-left:20px;">
       <label><input type="checkbox" class="sottotopic cibo" value="italiano"> Italiano</label><br>
@@ -152,10 +147,8 @@
       registerButton.disabled = checked.length === 0;
     }
 
-    // Inizializza lo stato del bottone
     updateButtonState();
 
-    // Aggiorna lo stato ogni volta che cambia un checkbox
     allCheckboxes.forEach(cb => {
       cb.addEventListener('change', updateButtonState);
     });

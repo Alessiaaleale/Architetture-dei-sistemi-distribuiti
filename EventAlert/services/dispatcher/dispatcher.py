@@ -4,12 +4,14 @@ from kafka.admin import KafkaAdminClient
 import redis
 import json
 import logging
+from notifica_utils import invia_notifica
 
-# Configura logging
 logging.basicConfig(level=logging.INFO)
 
-# Funzione di attesa per Kafka e topic
 def wait_for_kafka_and_topic(topic, retries=30, delay=1):
+    '''
+    Attende che Kafka e il topic specificato siano pronti.
+    '''
     for i in range(retries):
         try:
             admin = KafkaAdminClient(bootstrap_servers='kafka:9092')
@@ -24,7 +26,7 @@ def wait_for_kafka_and_topic(topic, retries=30, delay=1):
         time.sleep(delay)
     raise Exception(f" Timeout: il topic '{topic}' non è disponibile dopo {retries} tentativi.")
 
-# Attendi che Kafka e il topic siano pronti
+# Attesa che Kafka e il topic 'event_created' siano pronti
 wait_for_kafka_and_topic('event_created')
 
 # Connessione a Redis
@@ -34,23 +36,36 @@ redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
 consumer = KafkaConsumer(
     'event_created',
     bootstrap_servers='kafka:9092',
+    group_id='dispatcher-group',
+    enable_auto_commit=False,
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
-logging.info("Dispatcher in ascolto sul topic 'event_created'...")
-
 for message in consumer:
     event = message.value
-    interesse = event.get("interesse", None)
+    event_id = event["id_evento"]
+    interesse = event.get("interesse")
+
     if not interesse:
         logging.warning("Evento ricevuto senza interesse. Ignorato.")
         continue
 
-    logging.info(f"Nuovo evento ricevuto: {event}")
+    lock_key = f"evento_lock:{event_id}"
+    if not redis_client.set(lock_key, "1", nx=True, ex=300):
+        logging.info(f"Evento già in elaborazione o gestito: {event_id}. Ignorato.")
+        continue
 
-    # Recupera gli utenti interessati dal set Redis
+    logging.info(f" Nuovo evento ricevuto: {event}")
+    redis_client.sadd("eventi_gestiti", event_id)
+
     user_emails = redis_client.smembers(f"interesse:{interesse}")
-    
     for email in user_emails:
-        logging.info(f"Notifica per utente {email}: nuovo evento '{event['id_evento']}' "
-             f"({event['interesse']}) → {event.get('descrizione', '')}")
+        key = f"notifiche_inviate:{email}"
+        if redis_client.sismember(key, event_id):
+            logging.info(f" Notifica già inviata a {email} per evento {event_id}. Ignorata.")
+            continue
+
+        invia_notifica(email, event)
+        redis_client.sadd(key, event_id)
+
+    consumer.commit()

@@ -3,6 +3,8 @@ FROM python:3.9
 WORKDIR /app
 
 COPY dispatcher.py .
+COPY retry_worker.py .
+COPY notifica_utils.py .
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt

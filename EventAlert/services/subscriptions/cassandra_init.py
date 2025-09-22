@@ -49,10 +49,10 @@ def main():
             cluster = Cluster(['cassandra'])
             session = cluster.connect()
             create_schema(session)
-            print("✅ Keyspace e tabella creati correttamente.")
+            print("Keyspace e tabella creati correttamente.")
             connected = True
         except Exception as e:
-            print(f"⏳ Cassandra non ancora pronta. Riprovo... {str(e)}")
+            print(f"Cassandra non ancora pronta. Nuovo tentativo {str(e)}")
             time.sleep(5)
 
 if __name__== "__main__":

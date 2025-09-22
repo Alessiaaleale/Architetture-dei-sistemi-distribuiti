@@ -1,7 +1,6 @@
 flask
 cassandra-driver
 flask-cors
-beautifulsoup4
 requests
 redis
 kafka-python

@@ -60,11 +60,10 @@
       <button id="editBtn">✏️ Modifica interessi</button>
     </div>
 
-    <!-- Sezione nascosta per modifica interessi -->
+    
     <div id="editInteressi" style="display:none; margin-top:20px;">
       <h3>Modifica i tuoi interessi</h3>
 
-      <!-- Musica -->
       <label><input type="checkbox" class="macro" data-group="musica"> Musica</label><br>
       <div style="margin-left:20px;">
         <label><input type="checkbox" class="sottotopic musica" value="pop"> Pop</label><br>
@@ -72,7 +71,6 @@
         <label><input type="checkbox" class="sottotopic musica" value="house"> House</label><br>
       </div>
 
-      <!-- Sport -->
       <label><input type="checkbox" class="macro" data-group="sport"> Sport</label><br>
       <div style="margin-left:20px;">
         <label><input type="checkbox" class="sottotopic sport" value="calcio"> Calcio</label><br>
@@ -80,7 +78,6 @@
         <label><input type="checkbox" class="sottotopic sport" value="sport_acquatico"> Sport acquatico</label><br>
       </div>
 
-      <!-- Musei -->
       <label><input type="checkbox" class="macro" data-group="musei"> Musei</label><br>
       <div style="margin-left:20px;">
         <label><input type="checkbox" class="sottotopic musei" value="arte_contemporanea"> Arte contemporanea</label><br>
@@ -88,7 +85,6 @@
         <label><input type="checkbox" class="sottotopic musei" value="arte_moderna"> Arte moderna</label><br>
       </div>
 
-      <!-- Cibo -->
       <label><input type="checkbox" class="macro" data-group="cibo"> Cibo</label><br>
       <div style="margin-left:20px;">
         <label><input type="checkbox" class="sottotopic cibo" value="italiano"> Italiano</label><br>
@@ -127,7 +123,6 @@
           return;
         }
 
-        // Popola i dati
         document.getElementById("nome").innerText = data.nome;
         document.getElementById("cognome").innerText = data.cognome;
         document.getElementById("email").innerText = data.email;
@@ -137,7 +132,6 @@
 
         userInteressi = data.interessi;
 
-        // Sidebar dinamica
         const sidebar = document.getElementById("sidebar");
         if (data.ruolo === "admin") {
           sidebar.innerHTML = `
@@ -158,16 +152,14 @@
       }
     }
 
-    // Mostra form di modifica interessi
     document.getElementById("editBtn").addEventListener("click", () => {
       document.getElementById("editInteressi").style.display = "block";
 
-      // Pre-flaggare i checkbox
+      
       document.querySelectorAll(".sottotopic").forEach(cb => {
         cb.checked = userInteressi.includes(cb.value);
       });
 
-      // Macro coerenti coi sottotopic
       document.querySelectorAll(".macro").forEach(macro => {
         const group = macro.dataset.group;
         const sottotopics = document.querySelectorAll(".sottotopic." + group);
@@ -175,7 +167,6 @@
       });
     });
 
-    // Macro controllano i sottotopics
     document.querySelectorAll('.macro').forEach(macro => {
       macro.addEventListener('change', function () {
         const group = this.dataset.group;
@@ -184,7 +175,6 @@
       });
     });
 
-    // Sottotopic aggiornano macro
     document.querySelectorAll('.sottotopic').forEach(st => {
       st.addEventListener('change', function () {
         const group = Array.from(this.classList).find(c => c !== "sottotopic");
@@ -195,7 +185,6 @@
       });
     });
 
-    // Salva interessi aggiornati
     document.getElementById("saveBtn").addEventListener("click", async () => {
       const email = getEmail();
       const newInteressi = Array.from(document.querySelectorAll('.sottotopic:checked'))
@@ -217,10 +206,9 @@
             userInteressi = newInteressi;
             document.getElementById("interessi").innerText = userInteressi.join(", ");
 
-            // 🔹 Nascondi il form e torna alla vista iniziale
             setTimeout(() => {
                 document.getElementById("editInteressi").style.display = "none";
-                box.innerText = ""; // pulisco il messaggio di conferma
+                box.innerText = ""; 
             }, 500);
         } else {
             box.style.color = "red";
@@ -240,10 +228,8 @@
       saveBtn.disabled = selezionati.length === 0;
     }
 
-    // Inizializza lo stato del bottone
     aggiornaStatoBottone();
 
-    // Aggiungi listener a ogni checkbox
     allCheckboxes.forEach(cb => {
       cb.addEventListener("change", aggiornaStatoBottone);
     });

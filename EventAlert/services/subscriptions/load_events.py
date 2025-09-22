@@ -5,22 +5,27 @@ from cassandra.cluster import Cluster
 from kafka import KafkaProducer
 
 KEYSPACE = "eventalert"
-JSON_FILE = "eventi.json"  # Assicurati che il file sia nella stessa directory
+JSON_FILE = "eventi.json"  
 
 def get_db_session():
+    '''
+    Connette a Cassandra
+    '''
     cluster = Cluster(['cassandra'])
     session = cluster.connect()
     session.set_keyspace(KEYSPACE)
     return session
 
 def main():
-    # Kafka setup
+    '''
+    Carica eventi da un file JSON, li salva in Cassandra e li invia a Kafka.
+    '''
+    # Connessione a Kafka
     producer = KafkaProducer(
         bootstrap_servers='kafka:9092',
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
 
-    # Cassandra session
     session = get_db_session()
 
     # Carica eventi dal file JSON
@@ -44,7 +49,7 @@ def main():
             ).one()
 
             if existing:
-                print(f"❌ Evento già esistente: {id_evento}")
+                print(f" Evento già esistente: {id_evento}")
                 continue
 
             # Inserimento in Cassandra
@@ -69,10 +74,10 @@ def main():
                 "descrizione": descrizione
             })
 
-            print(f"✅ Evento inserito e inviato: {id_evento}")
+            print(f"Evento inserito e inviato: {id_evento}")
 
         except Exception as e:
-            print(f"⚠️ Errore con evento {evento}: {str(e)}")
+            print(f"Errore con evento {evento}: {str(e)}")
 
     producer.flush()
 

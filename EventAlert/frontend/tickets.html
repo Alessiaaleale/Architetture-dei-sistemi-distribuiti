@@ -73,7 +73,6 @@
       }
 
       try {
-        // Recupero ruolo per sidebar
         const accResp = await fetch("http://localhost:8080/account?email=" + encodeURIComponent(email));
         const accData = await accResp.json();
 
@@ -152,7 +151,7 @@
         const result = await response.json();
         if (response.ok) {
           alert("Partecipazione annullata con successo!");
-          caricaBiglietti(); // ricarica la lista aggiornata
+          caricaBiglietti(); 
         } else {
           alert("Errore: " + (result.error || "impossibile annullare la partecipazione"));
         }

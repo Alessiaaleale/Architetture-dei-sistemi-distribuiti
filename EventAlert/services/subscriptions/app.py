@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify, url_for, redirect, render_template, send_from_directory
+from flask import Flask, request, jsonify, url_for, redirect
 from flask_cors import CORS
 from cassandra.cluster import Cluster
 from datetime import date, datetime
-import uuid
+import socket
 import redis
 from kafka import KafkaProducer
 import json
@@ -12,36 +12,32 @@ CORS(app)
 
 redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
 
-# ---------------------------
-# Utilità robuste su date/ore
-# ---------------------------
 def get_db_session():
+    ''' 
+    Connessione a Cassandra 
+    '''
     cluster = Cluster(['cassandra'])
     session = cluster.connect()
     session.set_keyspace('eventalert')
     return session
 
 def to_py_date(cass_date) -> date:
-    """
-    Converte il tipo Cassandra (es. cassandra.util.Date) in datetime.date.
-    Se è già un datetime.date lo ritorna; altrimenti prova a costruirlo
-    da .year/.month/.day oppure da stringa 'YYYY-MM-DD'.
-    """
+    ''' 
+    Converte una data Cassandra in una data Python 
+    '''
     if isinstance(cass_date, date):
         return cass_date
     try:
         return date(cass_date.year, cass_date.month, cass_date.day)
     except Exception:
-        # fallback su parsing stringa
         return datetime.strptime(str(cass_date), "%Y-%m-%d").date()
 
 def combine_event_datetime(row) -> datetime:
-    """
-    Combina row.data_evento (DATE in Cassandra) e row.ora_evento ('HH:MM' TEXT)
-    in un datetime Python confrontabile.
-    """
+    ''' 
+    Combina data_evento e ora_evento in un singolo datetime
+    '''
     d = to_py_date(row.data_evento)
-    # accetta 'HH:MM' o 'HH:MM:SS' (i form input generano 'HH:MM')
+    # accetta 'HH:MM' o 'HH:MM:SS' 
     raw = str(row.ora_evento).strip()
     try:
         tm = datetime.strptime(raw[:5], "%H:%M").time()
@@ -50,11 +46,9 @@ def combine_event_datetime(row) -> datetime:
     return datetime.combine(d, tm)
 
 def parse_client_now(arg_now: str | None) -> datetime:
-    """
-    Se il frontend passa ?now=... usa quello, altrimenti datetime.now().
-    Formati accettati: 'YYYY-MM-DDTHH:MM[:SS]' oppure con spazio al posto della 'T',
-    oppure solo data 'YYYY-MM-DD' (in quel caso 00:00).
-    """
+    ''' 
+     Parsa la stringa 'now' dal client in un datetime
+     '''
     if not arg_now:
         return datetime.now()
     candidates = [
@@ -70,10 +64,12 @@ def parse_client_now(arg_now: str | None) -> datetime:
             return dt
         except ValueError:
             continue
-    # fallback sicuro
     return datetime.now()
 
 def row_to_dict(row) -> dict:
+    '''
+    Converte una riga Cassandra in un dizionario
+    '''
     return {
         'id_evento': row.id_evento,
         'interesse': row.interesse,
@@ -85,18 +81,35 @@ def row_to_dict(row) -> dict:
         'descrizione': row.descrizione
     }
 
-# ---------------------------
-# Routing
-# ---------------------------
-@app.route('/')
-def redirect_to_login():
-    return redirect(url_for('index'))
+def check_service(host, port):
+    ''' 
+    Controlla se un servizio è raggiungibile sulla porta specificata
+    '''
+    try:
+        socket.create_connection((host, port), timeout=2)
+        return True
+    except Exception:
+        return False
 
-# ==========================
-# REGISTRAZIONE
-# ==========================
+@app.route('/')
+def health_check():
+    '''
+    Endpoint di health check per tutti i servizi
+    '''
+    status = {
+        'cassandra': check_service('cassandra', 9042),
+        'redis': check_service('redis', 6379),
+        'kafka': check_service('kafka', 9092),
+        'zookeeper': check_service('zookeeper', 2181),
+        'frontend': check_service('frontend', 80),      
+    }
+    return jsonify(status)
+
 @app.route('/register', methods=['POST'])
 def register_user():
+    '''
+    Endpoint per la registrazione di un nuovo utente
+    '''
     data = request.get_json()
 
     required_fields = ['nome', 'cognome', 'email', 'ruolo', 'eta', 'password', 'interessi']
@@ -136,14 +149,16 @@ def register_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==========================
-# CREAZIONE EVENTO
-# ==========================
+
 @app.route('/create_event', methods=['POST'])
 def create_event():
+    '''
+    Endpoint per la creazione di un nuovo evento
+    '''
     producer = KafkaProducer(
         bootstrap_servers='kafka:9092',
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        acks='all'
     )
     data = request.get_json()
     required_fields = ['interesse', 'data_evento', 'ora_evento', 'luogo_evento', 'descrizione']
@@ -179,7 +194,7 @@ def create_event():
             (id_evento, interesse, data_pubblicazione, data_evento,
              ora_evento, luogo_evento, origine, descrizione)
         )
-        producer.send("event_created", {
+        producer.send("event_created", key=id_evento.encode('utf-8'), value={
             "id_evento": id_evento,
             "interesse": interesse,
             "luogo_evento": luogo_evento,
@@ -193,13 +208,12 @@ def create_event():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==========================
-# LOGIN
-# ==========================
 @app.route('/index', methods=['POST'])
 def login_user():
+    '''
+    Endpoint per il login dell'utente
+    '''
     data = request.get_json()
-
     email = data.get('email')
     password = data.get('password')
 
@@ -218,7 +232,7 @@ def login_user():
     if user.password != password:
         return jsonify({'error': 'Password errata'}), 401
 
-    # Redirige alla pagina in base al ruolo
+    # Redirect alla pagina in base al ruolo
     if user.ruolo == 'admin':
         return jsonify({
             'redirect': f'main_admin.html?email={email}',
@@ -234,33 +248,11 @@ def login_user():
     else:
         return jsonify({'error': 'Ruolo non riconosciuto'}), 400
 
-# ==========================
-# EVENTI UTENTE (solo futuri)
-# ==========================
-#@app.route('/main_utente', methods=['GET'])
-#def main_utente():
-#    email = request.args.get('email')
-#    if not email:
-#        return "Email non specificata", 400
-#
-#    session = get_db_session()
-#
-#    query_user = session.execute("SELECT interessi FROM users WHERE email = %s", [email])
-#    user = query_user.one()
-#    if not user:
-#        return "Utente non trovato", 404
-#
-#    interessi = user.interessi
-#    eventi = []
-#
-#    for interesse in interessi:
-#        rows = session.execute("SELECT * FROM events WHERE interesse = %s ALLOW FILTERING", [interesse])
-#        eventi.extend(rows)
-#
-#    return render_template("main_utente.html", eventi=eventi, email=email)
-
 @app.route('/eventi_utente', methods=['GET'])
 def eventi_utente():
+    '''
+    Endpoint per ottenere eventi basati sugli interessi dell'utente
+    ''' 
     email = request.args.get('email')
     client_now = request.args.get('now')  
     if not email:
@@ -297,13 +289,14 @@ def eventi_utente():
     if not eventi:
         return jsonify({'message': 'Nessun evento disponibile per gli interessi dell\'utente'}), 200
     
-    # ordina dal più imminente
     eventi.sort(key=lambda x: x[0])
     return jsonify({'eventi': [e[1] for e in eventi]})
 
-
 @app.route('/account', methods=['GET'])
 def get_account():
+    '''
+    Endpoint per ottenere i dettagli dell'account utente
+    ''' 
     email = request.args.get('email')
     if not email:
         return jsonify({'error': 'Email mancante'}), 400
@@ -325,6 +318,9 @@ def get_account():
 
 @app.route('/update_interessi', methods=['PUT'])
 def update_interessi():
+    '''
+    Endpoint per aggiornare gli interessi dell'utente
+    '''
     data = request.get_json()
     email = data.get("email")
     interessi = data.get("interessi")
@@ -346,6 +342,9 @@ def update_interessi():
 
 @app.route('/partecipa_evento', methods=['POST'])
 def partecipa_evento():
+    '''
+    Endpoint per registrare la partecipazione di un utente a un evento
+    ''' 
     data = request.get_json()
     email = data.get("email")
     id_evento = data.get("id_evento")
@@ -364,6 +363,9 @@ def partecipa_evento():
 
 @app.route('/eventi_partecipati', methods=['GET'])
 def eventi_partecipati():
+    '''
+    Endpoint per ottenere gli eventi a cui l'utente ha partecipato
+    ''' 
     email = request.args.get("email")
     if not email:
         return jsonify({"error": "Email mancante"}), 400
@@ -373,7 +375,6 @@ def eventi_partecipati():
 
     eventi_ids = [row.id_evento for row in rows]
 
-    # Recupera dettagli eventi
     eventi = []
     for eid in eventi_ids:
         row = session.execute("SELECT * FROM events WHERE id_evento=%s", [eid]).one()
@@ -392,6 +393,9 @@ def eventi_partecipati():
 
 @app.route('/annulla_partecipazione', methods=['DELETE'])
 def annulla_partecipazione():
+    '''
+    Endpoint per annullare la partecipazione di un utente a un evento
+    '''
     data = request.get_json()
     email = data.get("email")
     id_evento = data.get("id_evento")
@@ -407,8 +411,5 @@ def annulla_partecipazione():
 
     return jsonify({"message": "Partecipazione annullata con successo!"})
 
-# ==========================
-# MAIN
-# ==========================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
