@@ -226,45 +226,45 @@ def create_event():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-#@app.route('/index', methods=['POST'])
-#def login_user():
-#    '''
-#    Endpoint per il login dell'utente
-#    '''
-#    data = request.get_json()
-#    email = data.get('email')
-#    password = data.get('password')
-#
-#    if not email or not password:
-#        return jsonify({'error': 'Email e password obbligatorie'}), 400
-#
-#    session = get_db_session()
-#    user = session.execute(
-#        "SELECT password, ruolo FROM users WHERE email = %s",
-#        (email,)
-#    ).one()
-#
-#    if not user:
-#        return jsonify({'error': 'Utente non trovato'}), 404
-#
-#    if user.password != password:
-#        return jsonify({'error': 'Password errata'}), 401
-#
-#    # Redirect alla pagina in base al ruolo
-#    if user.ruolo == 'admin':
-#        return jsonify({
-#            'redirect': f'main_admin.html?email={email}',
-#            'ruolo': 'admin',
-#            'email': email
-#        })
-#    elif user.ruolo == 'utente':
-#        return jsonify({
-#            'redirect': f'main_utente.html?email={email}',
-#            'ruolo': 'utente',
-#            'email': email
-#        })
-#    else:
-#        return jsonify({'error': 'Ruolo non riconosciuto'}), 400
+@app.route('/index', methods=['POST'])
+def login_user():
+    '''
+    Endpoint per il login dell'utente
+    '''
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({'error': 'Email e password obbligatorie'}), 400
+
+    session = get_db_session()
+    user = session.execute(
+        "SELECT password, ruolo FROM users WHERE email = %s",
+        (email,)
+    ).one()
+
+    if not user:
+        return jsonify({'error': 'Utente non trovato'}), 404
+
+    if user.password != password:
+        return jsonify({'error': 'Password errata'}), 401
+
+    # Redirect alla pagina in base al ruolo
+    if user.ruolo == 'admin':
+        return jsonify({
+            'redirect': f'main_admin.html?email={email}',
+            'ruolo': 'admin',
+            'email': email
+        })
+    elif user.ruolo == 'utente':
+        return jsonify({
+            'redirect': f'main_utente.html?email={email}',
+            'ruolo': 'utente',
+            'email': email
+        })
+    else:
+        return jsonify({'error': 'Ruolo non riconosciuto'}), 400
 
 @app.route('/eventi_utente', methods=['GET'])
 def eventi_utente():
@@ -374,13 +374,25 @@ def partecipa_evento():
         return jsonify({"error": "Email o id_evento mancanti"}), 400
 
     session = get_db_session()
-    session.execute(
-        "INSERT INTO partecipazioni (email, id_evento) VALUES (%s, %s)",
-        [email, id_evento]
-    )
 
-    return jsonify({"message": "Partecipazione registrata con successo!"})
+    evento_esistente = session.execute(
+            "SELECT id_evento FROM events WHERE id_evento = %s",
+            (id_evento,)
+        ).one()
 
+    if not evento_esistente:
+        return jsonify({"error": "L'evento specificato non esiste"}), 404
+
+    try:
+        session.execute(
+            "INSERT INTO partecipazioni (email, id_evento) VALUES (%s, %s)",
+            [email, id_evento]
+        )
+        return jsonify({"message": "Partecipazione registrata con successo!"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    
 
 @app.route('/eventi_partecipati', methods=['GET'])
 def eventi_partecipati():
@@ -425,12 +437,23 @@ def annulla_partecipazione():
         return jsonify({"error": "Email o id_evento mancanti"}), 400
 
     session = get_db_session()
-    session.execute(
-        "DELETE FROM partecipazioni WHERE email=%s AND id_evento=%s",
-        [email, id_evento]
-    )
 
-    return jsonify({"message": "Partecipazione annullata con successo!"})
+    evento_esistente = session.execute(
+        "SELECT id_evento FROM events WHERE id_evento = %s",
+        (id_evento,)
+    ).one()
+
+    if not evento_esistente:
+        return jsonify({"error": "L'evento specificato non esiste"}), 404
+
+    try:
+        session.execute(
+            "DELETE FROM partecipazioni WHERE email=%s AND id_evento=%s",
+            (email, id_evento)
+        )
+        return jsonify({"message": "Partecipazione annullata con successo!"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Errore interno: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
