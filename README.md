@@ -1,7 +1,7 @@
 # EventAlert 
 
 ##  Descrizione
-**EventAlert** è un sistema di **notifica eventi personalizzati basato su abbonamento**.  
+**EventAlert** è un sistema di **notifica eventi personalizzati basato su sottoscrizione**.  
 Gli utenti possono registrarsi, selezionare i propri interessi (es. musica, sport, musei, cibo) e ricevere notifiche quando vengono creati nuovi eventi corrispondenti.  
 
 Il sistema integra:
@@ -10,7 +10,7 @@ Il sistema integra:
 - **Kafka + Redis**: infrastruttura di **messaggistica e matching** tra eventi e interessi utenti.  
 - **Dispatcher**: microservizio che “notifica” automaticamente gli utenti interessati quando un nuovo evento viene creato.  
 
-Grazie all’**esternalizzazione delle API tramite Nginx**, il backend è ora **accessibile come API REST indipendenti**, permettendo lo sviluppo di **client separati** (app mobile, SPA, bot, ecc.) senza dipendere dal frontend HTML.
+Grazie all’**esternalizzazione delle API tramite Nginx**, il backend è **accessibile come API REST indipendenti**, permettendo lo sviluppo di **client separati** (app mobile, bot, ecc.) senza dipendere dal frontend HTML.
 
 ---
 
@@ -37,7 +37,9 @@ EventAlert/
 │   ├── main_admin.html           # dashboard admin
 │   ├── main_utente.html          # dashboard utente
 │   ├── create_event.html         # form creazione evento
-│   └── tickets.html              # visualizzazione biglietti
+│   ├── tickets.html              # visualizzazione biglietti
+|   ├── account.html
+|   └── Dockerfile           
 │
 ├── services/
 │   ├── subscriptions/            # backend principale Flask
@@ -45,12 +47,15 @@ EventAlert/
 │   │   ├── cassandra_init.py      # script per inizializzare tabelle Cassandra
 │   │   ├── load_events.py         # caricamento eventi esterni + publish Kafka
 │   │   ├── eventi.json            # dataset di esempio
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+|   |   └── Dockerfile  
 │   │
 │   └── dispatcher/               # microservizio consumer Kafka
 │       ├── dispatcher.py          # ascolta topic event_created
-│       ├── dockerfile
-│       └── requirements.txt
+│       ├── requirements.txt  
+│       ├── notifica_utils.py
+│       ├── retry_worker.py
+│       └── dockerfile
 
 ```
 --- 
@@ -59,9 +64,9 @@ EventAlert/
 
 ### **Database**
 - **Cassandra**:  
-  - Tabella `users`: dati utente e interessi.  
-  - Tabella `events`: eventi creati (id, interesse, data, luogo, descrizione, origine).  
-  - Tabella `partecipazioni`: relazioni utente ↔ evento.  
+  - Tabella `users`: dati utente e interessi (email, nome, cognome, età, ruolo, interessi, password.  
+  - Tabella `events`: eventi creati (id_evento, interesse, data_pubblicazione, data_evento, ora_evento, luogo_evento, origine, descrizione).  
+  - Tabella `partecipazioni`: relazioni utente ↔ evento (email, id_evento).  
 
 ### **Messaggistica**
 - **Kafka**: topic `event_created` per la pubblicazione dei nuovi eventi.  
@@ -70,11 +75,10 @@ EventAlert/
 ### **Backend**
 - **Flask**:  
   - Espone API REST per utenti, eventi, partecipazioni.  
-  - Gestisce interazione con Cassandra, Redis e Kafka.  
-  - Supporta sia **HTML** (app originale) sia **API esterne** (via Nginx).  
+  - Gestisce interazione con Cassandra, Redis e Kafka. 
 
 ### **Microservizi**
-1. **Subscriptions (Backend principale)**  
+1. **Subscriptions**  
    - Gestisce utenti, eventi e partecipazioni.  
    - Fornisce API per login, registrazione, CRUD eventi e iscrizioni.  
 
@@ -82,23 +86,13 @@ EventAlert/
    - Consumer Kafka (`event_created`).  
    - Per ogni nuovo evento recupera da Redis gli utenti interessati e simula invio notifica.  
 
-3. **Load Events (Simulatore esterni)**  
-   - Script che legge un file JSON di eventi esterni.  
-   - Inserisce gli eventi in Cassandra e li pubblica su Kafka.  
-
-4. **Frontend (HTML)**  
-   - `index.html`: login  
-   - `register.html`: registrazione  
-   - `main_admin.html`, `main_utente.html`: viste differenziate per ruolo  
-   - `create_event.html`: creazione eventi manuale  
-
 ---
 
 ##  Esternalizzazione API
 
-Per rendere i microservizi accessibili dall’esterno è stato introdotto un **reverse proxy Nginx** davanti a Flask:
+Per rendere i microservizi accessibili dall’esterno è stato introdotto un **reverse proxy Nginx**:
 
-- **App HTML** → ancora disponibile su `http://localhost/`  
+- **App HTML** → disponibile su `http://localhost/`  
 - **API REST** → raggiungibili su `http://localhost/api/...`  
 
 --- 
