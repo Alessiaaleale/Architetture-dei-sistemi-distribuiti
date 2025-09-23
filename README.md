@@ -174,7 +174,7 @@ curl "http://localhost/api/account?email=utente@example.com"
 curl -X POST http://localhost/api/create_event \
   -H "Content-Type: application/json" \
   -d '{
-    "interesse": "jazz",
+    "interesse": "pop",
     "data_evento": "2025-10-10",
     "ora_evento": "21:00",
     "luogo_evento": "Roma, Auditorium",
