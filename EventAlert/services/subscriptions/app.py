@@ -162,10 +162,13 @@ def create_event():
         acks='all'
     )
     data = request.get_json()
-    required_fields = ['interesse', 'data_evento', 'ora_evento', 'luogo_evento', 'descrizione']
+    required_fields = ['interesse', 'data_evento', 'ora_evento', 'luogo_evento', 'descrizione','ruolo']
     for field in required_fields:
         if field not in data or (isinstance(data[field], str) and not data[field].strip()) or (isinstance(data[field], list) and not data[field]):
             return jsonify({'error': f'Dato mancante o vuoto: {field}'}), 400
+        
+    if data['ruolo'].lower() != 'admin':
+        return jsonify({'error': 'Permessi mancanti per questa azione'}), 403
 
     try:
         ora_evento_obj = datetime.strptime(data['ora_evento'], "%H:%M").time()
