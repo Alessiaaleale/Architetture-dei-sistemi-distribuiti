@@ -81,11 +81,7 @@
       <label>Descrizione evento:</label><br>
       <textarea name="descrizione" rows="4" required></textarea><br><br>
 
-      <label>Ruolo:</label><br>
-      <select name="ruolo" id="ruoloUtente" required>
-        <option value="admin">Admin</option>
-        <option value="utente">Utente</option>
-      </select><br><br>
+      <input type="hidden" name="ruolo" id="ruoloUtente" value="admin">
 
       <button type="submit">Crea evento</button>
     </form>
