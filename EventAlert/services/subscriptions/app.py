@@ -315,12 +315,12 @@ def get_account():
     '''
     Endpoint per ottenere i dettagli dell'account utente
     ''' 
-    data = request.get_json()
-    email = data.get("email")
-    interessi = data.get("interessi")
+    #data = request.get_json()
+    email = request.args.get("email")
+    #interessi = data.get("interessi")
     
-    if not email or interessi is None:
-        return jsonify({"error": "Email o interessi mancanti"}), 400
+    if not email :
+        return jsonify({"error": "Email mancante"}), 400
 
     session = get_db_session()
     row = session.execute("SELECT nome, cognome, email, eta, ruolo, interessi FROM users WHERE email=%s", [email]).one()
