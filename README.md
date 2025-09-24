@@ -186,7 +186,8 @@ curl -X POST http://localhost/api/create_event \
     "data_evento": "2025-10-10",
     "ora_evento": "21:00",
     "luogo_evento": "Roma, Auditorium",
-    "descrizione": "Concerto jazz live"
+    "descrizione": "Concerto jazz live",
+    "ruolo": "admin"
   }'
 ```
 
