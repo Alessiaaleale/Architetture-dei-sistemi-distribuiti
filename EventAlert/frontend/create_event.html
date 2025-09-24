@@ -81,6 +81,12 @@
       <label>Descrizione evento:</label><br>
       <textarea name="descrizione" rows="4" required></textarea><br><br>
 
+      <label>Ruolo:</label><br>
+      <select name="ruolo" id="ruoloUtente" required>
+        <option value="admin">Admin</option>
+        <option value="utente">Utente</option>
+      </select><br><br>
+
       <button type="submit">Crea evento</button>
     </form>
 
@@ -120,7 +126,8 @@
           ora_evento: form.ora_evento.value,
           luogo_evento: form.luogo_evento.value,
           descrizione: form.descrizione.value,
-          email: getEmail() // Include l'email nel payload se necessario
+          ruolo: document.getElementById('ruoloUtente').value,
+          email: getEmail()
         };
 
         try {
