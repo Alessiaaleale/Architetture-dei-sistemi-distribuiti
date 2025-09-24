@@ -164,6 +164,14 @@ curl -X POST http://localhost/api/register -H "Content-Type: application/json" -
   }'
 ```
 
+### Login di un utente 
+```bash
+curl -X POST http://localhost/api/login -H "Content-Type: application/json" -d '{
+  "email": "utente@example.com",
+  "password": "password123"
+}'
+```
+
 ### Informazioni del profilo dell'utente 
 ```bash
 curl "http://localhost/api/account?email=utente@example.com"
