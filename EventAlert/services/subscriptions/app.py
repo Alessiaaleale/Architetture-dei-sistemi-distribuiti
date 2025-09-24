@@ -315,9 +315,7 @@ def get_account():
     '''
     Endpoint per ottenere i dettagli dell'account utente
     ''' 
-    #data = request.get_json()
     email = request.args.get("email")
-    #interessi = data.get("interessi")
     
     if not email :
         return jsonify({"error": "Email mancante"}), 400
